@@ -14,6 +14,19 @@ const createTrip = async (req, res) => {
       plannedDistance,
     } = req.body;
 
+    if (
+  !source ||
+  !destination ||
+  !vehicle ||
+  !driver ||
+  cargoWeight == null ||
+  plannedDistance == null
+) {
+  return res.status(400).json({
+    success: false,
+    message: "All fields are required",
+  });
+}
     // Check Vehicle Exists
     const selectedVehicle = await Vehicle.findById(vehicle);
 
@@ -112,6 +125,19 @@ if (trip.status !== "Draft") {
 
     // Find Driver
     const driver = await Driver.findById(trip.driver);
+    if (!vehicle) {
+  return res.status(404).json({
+    success: false,
+    message: "Vehicle not found",
+  });
+}
+
+if (!driver) {
+  return res.status(404).json({
+    success: false,
+    message: "Driver not found",
+  });
+}
     if (vehicle.status !== "Available") {
   return res.status(400).json({
     success: false,
@@ -125,11 +151,13 @@ if (driver.status !== "Available") {
     message: "Driver is not available",
   });
 }
-if (trip.status !== "Draft") {
-    return res.status(400).json({
-        success:false,
-        message:"Only Draft trips can be dispatched"
-    })
+const today = new Date();
+
+if (new Date(driver.licenseExpiryDate) < today) {
+  return res.status(400).json({
+    success: false,
+    message: "Driver license has expired",
+  });
 }
     // Update Status
     trip.status = "Dispatched";
@@ -184,9 +212,31 @@ if(trip.status!=="Dispatched"){
 
     // Find Driver
     const driver = await Driver.findById(trip.driver);
-
+if (!vehicle || !driver) {
+  return res.status(404).json({
+    success: false,
+    message: "Vehicle or Driver not found",
+  });
+}
     // Update Trip
-    trip.status = "Completed";
+    
+    if (
+  finalOdometer == null ||
+  fuelConsumed == null ||
+  actualDistance == null
+) {
+  return res.status(400).json({
+    success: false,
+    message: "Complete trip details are required",
+  });
+}
+if (finalOdometer < vehicle.odometer) {
+  return res.status(400).json({
+    success: false,
+    message: "Final odometer cannot be less than current odometer",
+  });
+}
+trip.status = "Completed";
     trip.finalOdometer = finalOdometer;
     trip.fuelConsumed = fuelConsumed;
     trip.actualDistance = actualDistance;
@@ -238,11 +288,19 @@ if(trip.status!=="Dispatched"){
 }
     const vehicle = await Vehicle.findById(trip.vehicle);
     const driver = await Driver.findById(trip.driver);
-
+if (!vehicle || !driver) {
+  return res.status(404).json({
+    success: false,
+    message: "Vehicle or Driver not found",
+  });
+}
     // Update Status
     trip.status = "Cancelled";
+   if (vehicle.status !== "Retired") {
     vehicle.status = "Available";
-    driver.status = "Available";
+}
+
+driver.status = "Available";
 
     await trip.save();
     await vehicle.save();

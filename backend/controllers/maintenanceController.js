@@ -5,7 +5,12 @@ const Vehicle = require("../models/Vehicle");
 const createMaintenance = async (req, res) => {
   try {
     const { vehicle, title, description, cost } = req.body;
-
+if (!vehicle || !title || cost == null) {
+  return res.status(400).json({
+    success: false,
+    message: "Vehicle, title and cost are required",
+  });
+}
     const selectedVehicle = await Vehicle.findById(vehicle);
 
     if (!selectedVehicle) {
@@ -27,6 +32,7 @@ const createMaintenance = async (req, res) => {
         message:"Retired vehicle cannot be maintained"
     })
 }
+
     const maintenance = await Maintenance.create({
       vehicle,
       title,
@@ -64,9 +70,19 @@ const closeMaintenance = async (req, res) => {
         message: "Maintenance record not found",
       });
     }
-
+if (maintenance.status === "Closed") {
+  return res.status(400).json({
+    success: false,
+    message: "Maintenance is already closed",
+  });
+}
     const vehicle = await Vehicle.findById(maintenance.vehicle);
-
+if (!vehicle) {
+  return res.status(404).json({
+    success: false,
+    message: "Vehicle not found",
+  });
+}
     maintenance.status = "Closed";
     maintenance.endDate = new Date();
 
@@ -74,8 +90,10 @@ const closeMaintenance = async (req, res) => {
       vehicle.status = "Available";
     }
 
-    await maintenance.save();
-    await vehicle.save();
+await Promise.all([
+  maintenance.save(),
+  vehicle.save(),
+]);
 
     return res.status(200).json({
       success: true,
