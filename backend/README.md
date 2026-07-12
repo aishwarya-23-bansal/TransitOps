@@ -63,14 +63,14 @@ Headers: Authorization: Bearer <token>
 
 ## Folder Structure
 backend/
-├── config/db.js          # MongoDB connection
-├── models/                 # All database schemas
-├── middleware/
-│   ├── auth.js              # JWT verification (login check)
-│   └── roleCheck.js         # RBAC (role-based access check)
-├── controllers/            # Business logic
-├── routes/                  # API endpoints
-└── server.js                # Entry point
+├── config/db.js          # MongoDB connection  
+├── models/                 # All database schemas  
+├── middleware/  
+│   ├── auth.js              # JWT verification (login check)  
+│   └── roleCheck.js         # RBAC (role-based access check)  
+├── controllers/            # Business logic  
+├── routes/                  # API endpoints  
+└── server.js                # Entry point  
 
 ## Notes for the team
 - Vehicle/Driver/Trip/Maintenance modules will be added separately as they're completed.
