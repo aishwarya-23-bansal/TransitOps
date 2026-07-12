@@ -44,14 +44,14 @@ export const maintenanceAPI = {
 }
 
 export const fuelExpenseAPI = {
-  getFuelLogs: () => api.get('/fuel-logs'),
+  getFuelLogs: () => api.get('/fuel'),
   getExpenses: () => api.get('/expenses'),
-  addFuelLog: (payload) => api.post('/fuel-logs', payload),
+  addFuelLog: (payload) => api.post('/fuel', payload),
   addExpense: (payload) => api.post('/expenses', payload),
 }
 
 export const reportsAPI = {
-  getSummary: () => api.get('/reports/summary'),
+  getSummary: () => api.get('/analytics/dashboard'),
 }
 
 export default api
