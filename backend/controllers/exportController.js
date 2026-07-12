@@ -1,7 +1,7 @@
 const reportService = require('../services/reportService');
 const { generateCsv } = require('../utils/csvGenerator');
 const { writePdf } = require('../utils/pdfGenerator');
-const { asyncHandler } = require('../middlewares/errorHandler');
+const { asyncHandler } = require('../middleware/errorHandler');
 
 exports.exportCsv = asyncHandler(async (req, res) => {
   const report = await reportService.getReportData();

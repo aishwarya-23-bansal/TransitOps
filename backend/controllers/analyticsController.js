@@ -1,5 +1,5 @@
 const analytics = require('../services/analyticsService');
-const { asyncHandler } = require('../middlewares/errorHandler');
+const { asyncHandler } = require('../middleware/errorHandler');
 
 exports.operationalCosts = asyncHandler(async (req, res) => res.json(await analytics.operationalCosts()));
 exports.fuelEfficiency = asyncHandler(async (req, res) => res.json(await analytics.fuelEfficiency()));

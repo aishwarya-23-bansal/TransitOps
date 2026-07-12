@@ -1,5 +1,5 @@
 const Expense = require('../models/Expense');
-const { ApiError, asyncHandler } = require('../middlewares/errorHandler');
+const { ApiError, asyncHandler } = require('../middleware/errorHandler');
 
 const getExpenseById = async (id) => {
   const expense = await Expense.findById(id);
