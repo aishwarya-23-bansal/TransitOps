@@ -1,5 +1,5 @@
 const Fuel = require('../models/Fuel');
-const { ApiError, asyncHandler } = require('../middlewares/errorHandler');
+const { ApiError, asyncHandler } = require('../middleware/errorHandler');
 
 const getFuelById = async (id) => {
   const fuel = await Fuel.findById(id);
