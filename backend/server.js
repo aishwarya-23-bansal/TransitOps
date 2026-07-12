@@ -8,9 +8,9 @@ const driverRoutes = require("./routes/driverRoutes");
 const maintenanceRoutes = require("./routes/maintenanceRoutes");
 const tripRoutes = require("./routes/tripRoutes");
 
-const analyticsRoutes = require("./routes/analyticsRoutes");
+//const analyticsRoutes = require("./routes/analyticsRoutes");
 const expenseRoutes = require("./routes/expenseRoutes");
-const exportRoutes = require("./routes/exportRoutes");
+//const exportRoutes = require("./routes/exportRoutes");
 const fuelRoutes = require("./routes/fuelRoutes");
 
 // Connect to MongoDB
@@ -29,9 +29,9 @@ app.use('/api/drivers',driverRoutes);
 app.use('/api/maintenance',maintenanceRoutes );
 app.use("/api/trips", tripRoutes);
 
-app.use('/api/analytics', analyticsRoutes);
+//app.use('/api/analytics', analyticsRoutes);
 app.use('/api/expenses', expenseRoutes);
-app.use('/api/export', exportRoutes);
+//app.use('/api/export', exportRoutes);
 app.use('/api/fuel', fuelRoutes);
 
 
