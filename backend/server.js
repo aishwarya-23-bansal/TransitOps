@@ -3,8 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
 const authRoutes = require("./routes/authRoutes");
-// const vehicleRoutes = require("./routes/vehicleRoutes");
-// const driverRoutes = require("./routes/driverRoutes");
+const vehicleRoutes = require("./routes/vehicleRoutes");
+const driverRoutes = require("./routes/driverRoutes");
 const maintenanceRoutes = require("./routes/maintenanceRoutes");
 const tripRoutes = require("./routes/tripRoutes");
 
@@ -19,8 +19,8 @@ app.use(express.json());
 
 // Routes
 app.use('/api/auth', authRoutes);
-// app.use('/api/vehicles', vehicleRoutes);
-// app.use('/api/drivers',driverRoutes);
+app.use('/api/vehicles', vehicleRoutes);
+app.use('/api/drivers',driverRoutes);
 app.use('/api/maintenance',maintenanceRoutes );
 app.use("/api/trips", tripRoutes);
 
