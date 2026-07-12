@@ -1,13 +1,11 @@
 const mongoose = require('mongoose');
 
-const expenseSchema = new mongoose.Schema(
-  {
-    vehicle: { type: mongoose.Schema.Types.ObjectId, ref: 'Vehicle', required: true },
-    type: { type: String, required: true }, // e.g. Toll, Maintenance, Other
-    amount: { type: Number, required: true },
-    date: { type: Date, default: Date.now },
-  },
-  { timestamps: true }
-);
+const expenseSchema = new mongoose.Schema({
+  vehicleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Vehicle', required: true, index: true },
+  type: { type: String, enum: ['Toll', 'Parking', 'Other'], required: true },
+  amount: { type: Number, required: true, min: 0 },
+  description: { type: String, trim: true, default: '' },
+  date: { type: Date, default: Date.now },
+}, { timestamps: true });
 
 module.exports = mongoose.model('Expense', expenseSchema);
