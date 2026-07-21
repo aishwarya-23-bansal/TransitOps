@@ -8,10 +8,9 @@ export function AuthProvider({ children }) {
     return saved ? JSON.parse(saved) : null
   })
 
-  const login = ({ email, role }) => {
-    const nextUser = { email, role, name: email.split('@')[0] }
-    setUser(nextUser)
-    sessionStorage.setItem('transitops_user', JSON.stringify(nextUser))
+  const login = (userData) => {
+    setUser(userData)
+    sessionStorage.setItem('transitops_user', JSON.stringify(userData))
   }
 
   const logout = () => {

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi'
 import toast from 'react-hot-toast'
 import Card from '../components/Card.jsx'
@@ -10,44 +10,106 @@ import Pagination from '../components/Pagination.jsx'
 import Modal from '../components/Modal.jsx'
 import Input from '../components/Input.jsx'
 import Dropdown from '../components/Dropdown.jsx'
-import { vehicles as initialVehicles } from '../data/dummyData.js'
+
 import { statusColor, paginate } from '../utils/helpers.js'
+import { vehicleAPI } from '../services/api.js'
 
 const PER_PAGE = 5
 
 export default function VehicleRegistry() {
-  const [vehicles, setVehicles] = useState(initialVehicles)
+  const [vehicles, setVehicles] = useState([])
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
   const [modalOpen, setModalOpen] = useState(false)
-  const [form, setForm] = useState({ registration: '', model: '', type: '', capacity: '', status: 'Active' })
+  const [form, setForm] = useState({
+  registrationNumber: '',
+  name: '',
+  type: '',
+  maxLoadCapacity: '',
+  odometer: '',
+  acquisitionCost: '',
+  region: '',
+})
+useEffect(() => {
+  const loadVehicles = async () => {
+    try {
+      const response = await vehicleAPI.getAll()
 
-  const filtered = vehicles.filter((v) =>
-    [v.registration, v.model, v.type].join(' ').toLowerCase().includes(query.toLowerCase())
-  )
+      setVehicles(Array.isArray(response.data) ? response.data : [])
+    } catch (error) {
+      console.error(error)
+      toast.error('Failed to load vehicles')
+    }
+  }
+
+  loadVehicles()
+}, [])
+const filtered = vehicles.filter((v) =>
+  [
+    v.registrationNumber || '',
+    v.name || '',
+    v.type || '',
+  ]
+    .join(' ')
+    .toLowerCase()
+    .includes(query.toLowerCase())
+)
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
   const paged = paginate(filtered, page, PER_PAGE)
 
-  const handleAdd = () => {
-    if (!form.registration || !form.model) {
-      toast.error('Registration and model are required')
-      return
-    }
-    setVehicles((v) => [{ id: Date.now(), ...form }, ...v])
-    toast.success('Vehicle added')
-    setModalOpen(false)
-    setForm({ registration: '', model: '', type: '', capacity: '', status: 'Active' })
+const handleAdd = async () => {
+   if (
+    !form.registrationNumber ||
+    !form.name ||
+    !form.type ||
+    !form.maxLoadCapacity ||
+    !form.acquisitionCost
+  ) {
+    toast.error('Please fill all required fields')
+    return
   }
+  try {
+    const response = await vehicleAPI.create(form)
 
-  const handleDelete = (id) => {
-    setVehicles((v) => v.filter((x) => x.id !== id))
-    toast.success('Vehicle removed')
+    setVehicles((prev) => [response.data, ...prev])
+
+    toast.success('Vehicle added successfully')
+
+    setModalOpen(false)
+
+    setForm({
+      registrationNumber: '',
+      name: '',
+      type: '',
+      maxLoadCapacity: '',
+      odometer: '',
+      acquisitionCost: '',
+      region: '',
+    })
+  } catch (err) {
+    console.error(err)
+
+    toast.error(
+      err.response?.data?.message || 'Failed to add vehicle'
+    )
+  }
+}
+
+  const handleDelete = async (id) => {
+    try {
+      await vehicleAPI.remove(id)
+      setVehicles((v) => v.filter((x) => x._id !== id))
+      toast.success('Vehicle removed')
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to remove vehicle')
+    }
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-        <Search value={query} onChange={(val) => { setQuery(val); setPage(1) }} placeholder="Search by registration, model, type" className="sm:w-80" />
+        <Search value={query} onChange={(val) => { setQuery(val); setPage(1) }} placeholder="Search by registration number, vehicle name or type" className="sm:w-80" />
         <Button onClick={() => setModalOpen(true)} className="flex items-center gap-2 shrink-0">
           <FiPlus size={16} /> Add Vehicle
         </Button>
@@ -55,14 +117,21 @@ export default function VehicleRegistry() {
 
       <Card>
         <Table
-          columns={['Registration', 'Model', 'Type', 'Capacity', 'Status', 'Actions']}
+          columns={[
+  'Registration',
+  'Name',
+  'Type',
+  'Load Capacity',
+ 'Status',
+  'Actions'
+]}
           data={paged}
           renderRow={(v) => (
             <>
-              <td className="px-5 py-3 font-medium text-gray-200 whitespace-nowrap">{v.registration}</td>
-              <td className="px-5 py-3 text-gray-400 whitespace-nowrap">{v.model}</td>
+              <td className="px-5 py-3 font-medium text-gray-200 whitespace-nowrap">{v.registrationNumber}</td>
+              <td className="px-5 py-3 text-gray-400 whitespace-nowrap">{v.name}</td>
               <td className="px-5 py-3 text-gray-400 whitespace-nowrap">{v.type}</td>
-              <td className="px-5 py-3 text-gray-400 whitespace-nowrap">{v.capacity}</td>
+              <td className="px-5 py-3 text-gray-400 whitespace-nowrap">{v.maxLoadCapacity}</td>
               <td className="px-5 py-3">
                 <Badge color={statusColor(v.status)}>{v.status}</Badge>
               </td>
@@ -71,7 +140,10 @@ export default function VehicleRegistry() {
                   <button className="p-1.5 rounded-lg hover:bg-white/5 text-gray-400 hover:text-accent transition-colors">
                     <FiEdit2 size={15} />
                   </button>
-                  <button onClick={() => handleDelete(v.id)} className="p-1.5 rounded-lg hover:bg-white/5 text-gray-400 hover:text-red-400 transition-colors">
+                 <button
+  onClick={() => handleDelete(v._id)}
+  className="p-1.5 rounded-lg hover:bg-white/5 text-gray-400 hover:text-red-400 transition-colors"
+>
                     <FiTrash2 size={15} />
                   </button>
                 </div>
@@ -82,19 +154,110 @@ export default function VehicleRegistry() {
         <Pagination page={page} totalPages={totalPages} onChange={setPage} />
       </Card>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Add Vehicle">
-        <div className="space-y-4">
-          <Input label="Registration" value={form.registration} onChange={(e) => setForm((f) => ({ ...f, registration: e.target.value }))} />
-          <Input label="Model" value={form.model} onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))} />
-          <Dropdown label="Type" options={['Truck', 'LCV', 'Pickup', 'Mini Truck']} value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))} />
-          <Input label="Capacity" placeholder="e.g. 2500 kg" value={form.capacity} onChange={(e) => setForm((f) => ({ ...f, capacity: e.target.value }))} />
-          <Dropdown label="Status" options={['Active', 'Idle', 'Maintenance']} value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} />
-          <div className="flex gap-3 pt-2">
-            <Button onClick={handleAdd} className="flex-1">Save Vehicle</Button>
-            <Button variant="secondary" onClick={() => setModalOpen(false)} className="flex-1">Cancel</Button>
-          </div>
-        </div>
-      </Modal>
+     <Modal
+  open={modalOpen}
+  onClose={() => setModalOpen(false)}
+  title="Add Vehicle"
+>
+  <div className="space-y-4">
+
+    <Input
+      label="Registration Number"
+      value={form.registrationNumber}
+      onChange={(e) =>
+        setForm((f) => ({
+          ...f,
+          registrationNumber: e.target.value,
+        }))
+      }
+    />
+
+    <Input
+      label="Vehicle Name"
+      value={form.name}
+      onChange={(e) =>
+        setForm((f) => ({
+          ...f,
+          name: e.target.value,
+        }))
+      }
+    />
+
+    <Dropdown
+      label="Type"
+      options={['Truck', 'Van', 'Mini Truck', 'Pickup']}
+      value={form.type}
+      onChange={(e) =>
+        setForm((f) => ({
+          ...f,
+          type: e.target.value,
+        }))
+      }
+    />
+
+    <Input
+      label="Maximum Load Capacity (kg)"
+      type="number"
+      value={form.maxLoadCapacity}
+      onChange={(e) =>
+        setForm((f) => ({
+          ...f,
+          maxLoadCapacity: e.target.value,
+        }))
+      }
+    />
+
+    <Input
+      label="Odometer"
+      type="number"
+      value={form.odometer}
+      onChange={(e) =>
+        setForm((f) => ({
+          ...f,
+          odometer: e.target.value,
+        }))
+      }
+    />
+
+    <Input
+      label="Acquisition Cost"
+      type="number"
+      value={form.acquisitionCost}
+      onChange={(e) =>
+        setForm((f) => ({
+          ...f,
+          acquisitionCost: e.target.value,
+        }))
+      }
+    />
+
+    <Input
+      label="Region"
+      value={form.region}
+      onChange={(e) =>
+        setForm((f) => ({
+          ...f,
+          region: e.target.value,
+        }))
+      }
+    />
+
+    <div className="flex gap-3 pt-2">
+      <Button onClick={handleAdd} className="flex-1">
+        Save Vehicle
+      </Button>
+
+      <Button
+        variant="secondary"
+        onClick={() => setModalOpen(false)}
+        className="flex-1"
+      >
+        Cancel
+      </Button>
+    </div>
+
+  </div>
+</Modal>
     </div>
   )
 }

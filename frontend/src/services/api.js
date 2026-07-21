@@ -1,9 +1,27 @@
 import axios from 'axios'
-
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-  headers: { 'Content-Type': 'application/json' },
+  baseURL: 'http://localhost:8000/api',
 })
+export const authAPI = {
+  register: (data) => api.post('/auth/register', data),
+  login: (data) => api.post('/auth/login', data),
+  getMe: () => api.get('/auth/me'),
+  getUsers: () => api.get('/auth/users'),
+}
+export const fuelAPI = {
+  getAll: () => api.get('/fuel'),
+  create: (data) => api.post('/fuel', data),
+}
+
+export const expenseAPI = {
+  getAll: () => api.get('/expenses'),
+  create: (data) => api.post('/expenses', data),
+}
+export const maintenanceAPI = {
+  getAll: () => api.get('/maintenance'),
+  create: (data) => api.post('/maintenance', data),
+  close: (id) => api.patch(`/maintenance/${id}/close`),
+}
 
 api.interceptors.request.use((config) => {
   const user = sessionStorage.getItem('transitops_user')
@@ -14,9 +32,6 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-export const authAPI = {
-  login: (payload) => api.post('/auth/login', payload),
-}
 
 export const vehicleAPI = {
   getAll: () => api.get('/vehicles'),
@@ -34,14 +49,19 @@ export const driverAPI = {
 
 export const tripAPI = {
   getAll: () => api.get('/trips'),
+
   create: (payload) => api.post('/trips', payload),
+
+  dispatch: (id) => api.patch(`/trips/${id}/dispatch`),
+
+  complete: (id, payload) =>
+    api.patch(`/trips/${id}/complete`, payload),
+
+  cancel: (id) => api.patch(`/trips/${id}/cancel`),
+
   update: (id, payload) => api.put(`/trips/${id}`, payload),
 }
 
-export const maintenanceAPI = {
-  getAll: () => api.get('/maintenance'),
-  create: (payload) => api.post('/maintenance', payload),
-}
 
 export const fuelExpenseAPI = {
   getFuelLogs: () => api.get('/fuel'),

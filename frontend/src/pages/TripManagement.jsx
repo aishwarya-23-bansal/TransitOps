@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import Card from '../components/Card.jsx'
@@ -6,7 +6,7 @@ import Input from '../components/Input.jsx'
 import Dropdown from '../components/Dropdown.jsx'
 import Button from '../components/Button.jsx'
 import Badge from '../components/Badge.jsx'
-import { vehicles, drivers, tripHistory } from '../data/dummyData.js'
+import { tripAPI, vehicleAPI, driverAPI } from '../services/api.js'
 import { statusColor } from '../utils/helpers.js'
 
 const stages = ['Draft', 'Dispatched', 'Completed', 'Cancelled']
@@ -14,13 +14,106 @@ const stages = ['Draft', 'Dispatched', 'Completed', 'Cancelled']
 export default function TripManagement() {
   const { register, handleSubmit, reset } = useForm()
   const [activeStage, setActiveStage] = useState(1)
+const [trips, setTrips] = useState([])
+const [vehicles, setVehicles] = useState([])
+const [drivers, setDrivers] = useState([])
+const [selectedTrip, setSelectedTrip] = useState(null)
+useEffect(() => {
+  loadData()
+}, [])
 
-  const onSubmit = () => {
-    toast.success('Trip dispatched')
-    setActiveStage(1)
-    reset()
+const loadData = async () => {
+  try {
+    const [tripRes, vehicleRes, driverRes] = await Promise.all([
+      tripAPI.getAll(),
+      vehicleAPI.getAll(),
+      driverAPI.getAll(),
+    ])
+
+   setTrips(tripRes.data.trips || [])
+    setVehicles(Array.isArray(vehicleRes.data) ? vehicleRes.data : [])
+    setDrivers(Array.isArray(driverRes.data) ? driverRes.data : [])
+  } catch (err) {
+    console.error(err)
+    toast.error('Failed to load data')
   }
+}
 
+  const onSubmit = async (data) => {
+  try {
+    const response = await tripAPI.create(data)
+
+  const newTrip = response.data.trip
+
+setTrips((prev) => [newTrip, ...prev])
+
+setSelectedTrip(newTrip)
+
+setActiveStage(stages.indexOf(newTrip.status))
+
+toast.success('Trip created successfully')
+
+    reset()
+  } catch (err) {
+    console.error(err)
+
+    toast.error(
+      err.response?.data?.message || 'Failed to dispatch trip'
+    )
+  }
+}
+const handleDispatch = async (id) => {
+  try {
+    await tripAPI.dispatch(id)
+
+    toast.success('Trip dispatched')
+
+    loadData()
+  } catch (err) {
+    console.error(err)
+
+    toast.error(
+      err.response?.data?.message || 'Failed to dispatch trip'
+    )
+  }
+}
+
+const handleCancel = async (id) => {
+  try {
+    await tripAPI.cancel(id)
+
+    toast.success('Trip cancelled')
+
+    loadData()
+  } catch (err) {
+    console.error(err)
+
+    toast.error(
+      err.response?.data?.message || 'Failed to cancel trip'
+    )
+  }
+}
+
+const handleComplete = async (id) => {
+  try {
+    await tripAPI.complete(id, {
+      finalOdometer: 1000,
+      fuelConsumed: 20,
+      actualDistance: 150,
+      revenue: 5000,
+    })
+
+    toast.success('Trip completed')
+
+    loadData()
+  } catch (err) {
+    console.error(err)
+
+    toast.error(
+      err.response?.data?.message || 'Failed to complete trip'
+    )
+  }
+}
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card title="Create Trip">
@@ -29,11 +122,25 @@ export default function TripManagement() {
             <Input label="Source" placeholder="e.g. Pune" {...register('source', { required: true })} />
             <Input label="Destination" placeholder="e.g. Mumbai" {...register('destination', { required: true })} />
           </div>
-          <Dropdown label="Vehicle" options={vehicles.map((v) => v.registration)} {...register('vehicle')} />
-          <Dropdown label="Driver" options={drivers.map((d) => d.name)} {...register('driver')} />
+      <Dropdown
+  label="Vehicle"
+  options={vehicles.map((v) => ({
+    label: `${v.registrationNumber} (${v.name})`,
+    value: v._id,
+  }))}
+  {...register('vehicle', { required: true })}
+/>
+       <Dropdown
+  label="Driver"
+  options={drivers.map((d) => ({
+    label: d.name,
+    value: d._id,
+  }))}
+  {...register('driver', { required: true })}
+/>
           <div className="grid grid-cols-2 gap-4">
             <Input label="Cargo Weight (kg)" type="number" placeholder="e.g. 1200" {...register('cargoWeight')} />
-            <Input label="Distance (km)" type="number" placeholder="e.g. 148" {...register('distance')} />
+            <Input label="Distance (km)" type="number" placeholder="e.g. 148" {...register('plannedDistance', { required: true })} />
           </div>
           <div className="flex gap-3 pt-2">
             <Button type="submit" className="flex-1">Dispatch</Button>
@@ -67,15 +174,60 @@ export default function TripManagement() {
 
         <Card title="Trip History">
           <div className="space-y-3">
-            {tripHistory.map((t) => (
-              <div key={t.id} className="flex items-center justify-between border-b border-border/60 pb-3 last:border-0 last:pb-0">
-                <div>
-                  <p className="text-sm font-medium text-gray-200">{t.source} → {t.destination}</p>
-                  <p className="text-xs text-gray-500">{t.vehicle} · {t.date}</p>
-                </div>
-                <Badge color={statusColor(t.status)}>{t.status}</Badge>
-              </div>
-            ))}
+         {trips.map((t) => (
+  <div
+    key={t._id}
+    className="flex items-center justify-between border-b border-border/60 pb-3 last:border-0 last:pb-0"
+  >
+    <div>
+      <p className="text-sm font-medium text-gray-200">
+        {t.source} → {t.destination}
+      </p>
+
+      <p className="text-xs text-gray-500">
+        {t.vehicle?.registrationNumber} · {t.driver?.name}
+      </p>
+
+      <p className="text-xs text-gray-500">
+        {new Date(t.createdAt).toLocaleDateString()}
+      </p>
+    </div>
+
+   <div className="flex flex-col items-end gap-2">
+  <Badge color={statusColor(t.status)}>
+    {t.status}
+  </Badge>
+
+  {t.status === 'Draft' && (
+    <Button
+      onClick={() => handleDispatch(t._id)}
+      className="text-xs px-2 py-1"
+    >
+      Dispatch
+    </Button>
+  )}
+
+  {t.status === 'Dispatched' && (
+    <>
+      <Button
+        onClick={() => handleComplete(t._id)}
+        className="text-xs px-2 py-1"
+      >
+        Complete
+      </Button>
+
+      <Button
+        variant="secondary"
+        onClick={() => handleCancel(t._id)}
+        className="text-xs px-2 py-1"
+      >
+        Cancel
+      </Button>
+    </>
+  )}
+</div>
+  </div>
+))}
           </div>
         </Card>
       </div>

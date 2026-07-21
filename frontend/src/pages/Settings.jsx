@@ -1,17 +1,64 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import { FiCheck, FiX } from 'react-icons/fi'
+
 import Card from '../components/Card.jsx'
 import Badge from '../components/Badge.jsx'
 import Table from '../components/Table.jsx'
 import Input from '../components/Input.jsx'
 import Button from '../components/Button.jsx'
-import { users, roles } from '../data/dummyData.js'
+
+import { authAPI } from '../services/api.js'
 import { useAuth } from '../context/AuthContext.jsx'
 
 export default function Settings() {
   const { user } = useAuth()
   const [darkTheme, setDarkTheme] = useState(true)
+const [users, setUsers] = useState([])
+const roles = [
+  {
+    id: 1,
+    role: 'Admin',
+    vehicles: true,
+    drivers: true,
+    trips: true,
+    reports: true,
+  },
+  {
+    id: 2,
+    role: 'Fleet Manager',
+    vehicles: true,
+    drivers: true,
+    trips: true,
+    reports: true,
+  },
+  {
+    id: 3,
+    role: 'Driver',
+    vehicles: false,
+    drivers: false,
+    trips: true,
+    reports: false,
+  },
+]
+useEffect(() => {
+  const fetchUsers = async () => {
+    try {
+      const res = await authAPI.getUsers()
+      setUsers(
+        res.data.map((u) => ({
+          ...u,
+          status: 'Active'
+        }))
+      )
+    } catch (error) {
+      toast.error('Failed to load users')
+      console.error(error)
+    }
+  }
 
+  fetchUsers()
+}, [])
   return (
     <div className="space-y-6">
       <Card title="Users">

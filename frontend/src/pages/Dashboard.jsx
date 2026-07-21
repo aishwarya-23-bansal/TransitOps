@@ -17,32 +17,69 @@ export default function Dashboard() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [v, d, t] = await Promise.all([vehicleAPI.getAll(), driverAPI.getAll(), tripAPI.getAll()])
-        setVehicles(v.data); setDrivers(d.data); setTrips(t.data)
+        const [v, d, t] = await Promise.all([
+  vehicleAPI.getAll(),
+  driverAPI.getAll(),
+  tripAPI.getAll()
+])
+
+console.log("Vehicles:", v.data)
+console.log("Drivers:", d.data)
+console.log("Trips:", t.data)
+
+setVehicles(Array.isArray(v.data) ? v.data : [])
+setDrivers(Array.isArray(d.data) ? d.data : [])
+setTrips(Array.isArray(t.data) ? t.data : (t.data.trips || []))
       } catch (e) { console.error(e) }
       setLoading(false)
     }
     load()
   }, [])
+const filteredVehicles = vehicles.filter((v) => {
+  const matchType =
+    !filters.type || v.type === filters.type
 
-  const activeVehicles = vehicles.filter(v => v.status === 'On Trip').length
-  const availableVehicles = vehicles.filter(v => v.status === 'Available').length
-  const inMaintenance = vehicles.filter(v => v.status === 'In Shop').length
+  const matchStatus =
+    !filters.status || v.status === filters.status
+
+  const matchRegion =
+    !filters.region || v.region === filters.region
+
+  return matchType && matchStatus && matchRegion
+})
+  const activeVehicles = filteredVehicles.filter(
+  (v) => v.status === 'On Trip'
+).length
+ const availableVehicles = filteredVehicles.filter(
+  (v) => v.status === 'Available'
+).length
+ const inMaintenance = filteredVehicles.filter(
+  (v) => v.status === 'In Shop'
+).length
   const activeTrips = trips.filter(t => t.status === 'Dispatched').length
   const pendingTrips = trips.filter(t => t.status === 'Draft').length
   const driversOnDuty = drivers.filter(d => d.status === 'On Trip').length
-  const fleetUtilization = vehicles.length ? Math.round((activeVehicles / vehicles.length) * 100) : 0
-
-  const kpis = [
-    { label: 'Active Vehicles', value: activeVehicles, color: 'text-blue-400' },
-    { label: 'Available Vehicles', value: availableVehicles, color: 'text-green-400' },
-    { label: 'In Maintenance', value: inMaintenance, color: 'text-yellow-400' },
-    { label: 'Active Trips', value: activeTrips, color: 'text-orange-400' },
-    { label: 'Pending Trips', value: pendingTrips, color: 'text-purple-400' },
-    { label: 'Drivers On Duty', value: driversOnDuty, color: 'text-cyan-400' },
-    { label: 'Fleet Utilization', value: `${fleetUtilization}%`, color: 'text-green-400' },
-  ]
-
+  const fleetUtilization = filteredVehicles.length
+  ? Math.round((activeVehicles / filteredVehicles.length) * 100)
+  : 0
+ const totalRevenue = trips.reduce(
+  (sum, trip) => sum + (trip.revenue || 0),
+  0
+)
+ const kpis = [
+  { label: 'Active Vehicles', value: activeVehicles, color: 'text-blue-400' },
+  { label: 'Available Vehicles', value: availableVehicles, color: 'text-green-400' },
+  { label: 'In Maintenance', value: inMaintenance, color: 'text-yellow-400' },
+  { label: 'Active Trips', value: activeTrips, color: 'text-orange-400' },
+  { label: 'Pending Trips', value: pendingTrips, color: 'text-purple-400' },
+  { label: 'Drivers On Duty', value: driversOnDuty, color: 'text-cyan-400' },
+  { label: 'Fleet Utilization', value: `${fleetUtilization}%`, color: 'text-green-400' },
+  {
+    label: 'Total Revenue',
+    value: `₹${totalRevenue.toLocaleString()}`,
+    color: 'text-emerald-400',
+  },
+]
   const vehicleStatusSummary = [
     { name: 'Available', value: availableVehicles, color: '#22C55E' },
     { name: 'On Trip', value: activeVehicles, color: '#3B82F6' },
@@ -61,9 +98,15 @@ export default function Dashboard() {
       <div className="flex flex-wrap gap-3">
         <Dropdown className="w-40" placeholder="Vehicle Type" options={['Truck','Van','Mini']} value={filters.type} onChange={(e)=>setFilters(f=>({...f,type:e.target.value}))} />
         <Dropdown className="w-40" placeholder="Status" options={['Available','On Trip','In Shop']} value={filters.status} onChange={(e)=>setFilters(f=>({...f,status:e.target.value}))} />
-        <Dropdown className="w-40" placeholder="Region" options={['West','North','South','East']} value={filters.region} onChange={(e)=>setFilters(f=>({...f,region:e.target.value}))} />
+        <Dropdown className="w-40" placeholder="Region" options={[
+  ...new Set(
+    vehicles
+      .map((v) => v.region)
+      .filter(Boolean)
+  ),
+]} value={filters.region} onChange={(e)=>setFilters(f=>({...f,region:e.target.value}))} />
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
+     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-4">
         {kpis.map(kpi => (
           <Card key={kpi.label} className="!p-4">
             <p className={`text-2xl font-bold ${kpi.color}`}>{kpi.value}</p>
@@ -94,7 +137,11 @@ export default function Dashboard() {
             {vehicleStatusSummary.map(v => (
               <div key={v.name}>
                 <div className="flex justify-between text-xs text-gray-400 mb-1"><span>{v.name}</span><span>{v.value}</span></div>
-                <div className="h-1.5 bg-bg rounded-full overflow-hidden"><div className="h-full rounded-full" style={{width:`${vehicles.length?(v.value/vehicles.length)*100:0}%`,backgroundColor:v.color}}/></div>
+                <div className="h-1.5 bg-bg rounded-full overflow-hidden"><div className="h-full rounded-full" style={{width: `${
+  filteredVehicles.length
+    ? (v.value / filteredVehicles.length) * 100
+    : 0
+}%`,backgroundColor:v.color}}/></div>
               </div>
             ))}
           </div>

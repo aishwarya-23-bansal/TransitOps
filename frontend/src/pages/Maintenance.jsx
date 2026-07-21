@@ -1,24 +1,58 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
+
 import Card from '../components/Card.jsx'
 import Input from '../components/Input.jsx'
 import Dropdown from '../components/Dropdown.jsx'
 import Button from '../components/Button.jsx'
 import Badge from '../components/Badge.jsx'
 import Table from '../components/Table.jsx'
-import { vehicles, maintenanceRecords } from '../data/dummyData.js'
+
+import { vehicles } from '../data/dummyData.js'
+import { maintenanceAPI } from '../services/api.js'
 import { statusColor, formatCurrency } from '../utils/helpers.js'
 
 export default function Maintenance() {
   const { register, handleSubmit, reset } = useForm()
-  const [records, setRecords] = useState(maintenanceRecords)
+  const [records, setRecords] = useState([])
+  useEffect(() => {
+  const fetchMaintenance = async () => {
+    try {
+     const res = await maintenanceAPI.getAll()
 
-  const onSubmit = (data) => {
-    setRecords((r) => [{ id: Date.now(), vehicle: data.vehicle, issue: data.issue, cost: Number(data.cost) || 0, status: data.status || 'Scheduled', start: data.start, end: data.end }, ...r])
+console.log("Maintenance API:", res.data)
+
+setRecords(res.data.maintenance || [])
+    } catch (error) {
+      toast.error('Failed to load maintenance records')
+      console.error(error)
+    }
+  }
+
+  fetchMaintenance()
+}, [])
+
+  const onSubmit = async (data) => {
+  try {
+    const res = await maintenanceAPI.create({
+      vehicle: data.vehicle,
+      issue: data.issue,
+      cost: Number(data.cost) || 0,
+      status: data.status || 'Scheduled',
+      start: data.start,
+      end: data.end,
+    })
+
+    setRecords((r) => [res.data, ...r])
+
     toast.success('Maintenance record saved')
     reset()
+  } catch (error) {
+    toast.error('Failed to save maintenance')
+    console.error(error)
   }
+}
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

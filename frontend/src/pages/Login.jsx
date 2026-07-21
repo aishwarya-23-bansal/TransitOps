@@ -6,6 +6,7 @@ import Input from '../components/Input.jsx'
 import Dropdown from '../components/Dropdown.jsx'
 import Button from '../components/Button.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
+import { authAPI } from '../services/api.js'
 
 const features = [
   { icon: FiTruck, label: 'Fleet Tracking' },
@@ -19,11 +20,25 @@ export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
 
-  const onSubmit = (data) => {
-    login({ email: data.email, role: data.role || 'Admin' })
-    toast.success(`Welcome back, signed in as ${data.role || 'Admin'}`)
+ const onSubmit = async (data) => {
+  try {
+    const response = await authAPI.login({
+      email: data.email,
+      password: data.password,
+       role: data.role,
+    })
+
+    login(response.data)
+
+    toast.success(`Welcome ${response.data.name}`)
+
     navigate('/dashboard')
+  } catch (error) {
+    toast.error(
+      error.response?.data?.message || 'Login failed'
+    )
   }
+}
 
   return (
     <div className="min-h-screen flex bg-bg">
@@ -70,12 +85,17 @@ export default function Login() {
               error={errors.password?.message}
               {...register('password', { required: 'Password is required', minLength: { value: 6, message: 'Minimum 6 characters' } })}
             />
-            <Dropdown
-              label="Login As"
-              placeholder="Select role"
-              options={['Admin', 'Dispatcher', 'Driver']}
-              {...register('role')}
-            />
+           <Dropdown
+  label="Login As"
+  placeholder="Select role"
+  options={[
+    'FleetManager',
+    'Driver',
+    'SafetyOfficer',
+    'FinancialAnalyst',
+  ]}
+  {...register('role')}
+/>
 
             <div className="flex items-center justify-between text-sm pt-1">
               <label className="flex items-center gap-2 text-gray-400 cursor-pointer">

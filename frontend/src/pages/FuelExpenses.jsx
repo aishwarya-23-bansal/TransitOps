@@ -5,13 +5,31 @@ import Card from '../components/Card.jsx'
 import Search from '../components/Search.jsx'
 import Button from '../components/Button.jsx'
 import Table from '../components/Table.jsx'
-import { fuelLogs, expenseLogs } from '../data/dummyData.js'
+import { useEffect } from 'react'
+import { fuelAPI, expenseAPI } from '../services/api.js'
 import { formatCurrency } from '../utils/helpers.js'
 
 export default function FuelExpenses() {
   const [query, setQuery] = useState('')
-  const [fuel] = useState(fuelLogs)
-  const [expenses] = useState(expenseLogs)
+ const [fuel, setFuel] = useState([])
+const [expenses, setExpenses] = useState([])
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const fuelRes = await fuelAPI.getAll()
+      const expenseRes = await expenseAPI.getAll()
+
+      setFuel(fuelRes.data)
+      setExpenses(expenseRes.data)
+
+    } catch (error) {
+      toast.error('Failed to load fuel and expenses')
+      console.error(error)
+    }
+  }
+
+  fetchData()
+}, [])
 
   const totalFuelCost = fuel.reduce((sum, f) => sum + f.cost, 0)
   const totalExpenseCost = expenses.reduce((sum, e) => sum + e.cost, 0)
