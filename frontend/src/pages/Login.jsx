@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { FiTruck, FiMap, FiTool, FiBarChart2 } from 'react-icons/fi'
@@ -16,29 +16,54 @@ const features = [
 ]
 
 export default function Login() {
-  const { register, handleSubmit, formState: { errors } } = useForm()
   const { login } = useAuth()
   const navigate = useNavigate()
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    role: 'FleetManager',
+    remember: false,
+  })
+  const [errors, setErrors] = useState({})
 
- const onSubmit = async (data) => {
-  try {
-    const response = await authAPI.login({
-      email: data.email,
-      password: data.password,
-       role: data.role,
-    })
-
-    login(response.data)
-
-    toast.success(`Welcome ${response.data.name}`)
-
-    navigate('/dashboard')
-  } catch (error) {
-    toast.error(
-      error.response?.data?.message || 'Login failed'
-    )
+  const handleChange = (event) => {
+    const { name, value, type, checked } = event.target
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }))
+    setErrors((prev) => ({ ...prev, [name]: '' }))
   }
-}
+
+  const validate = () => {
+    const nextErrors = {}
+    if (!formData.email.trim()) nextErrors.email = 'Email is required'
+    if (!formData.password) nextErrors.password = 'Password is required'
+    if (formData.password && formData.password.length < 6) nextErrors.password = 'Minimum 6 characters'
+    return nextErrors
+  }
+
+  const onSubmit = async (event) => {
+    event.preventDefault()
+    const nextErrors = validate()
+    setErrors(nextErrors)
+
+    if (Object.keys(nextErrors).length > 0) return
+
+    try {
+      const response = await authAPI.login({
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+      })
+
+      login(response.data)
+      toast.success(`Welcome ${response.data.name}`)
+      navigate('/dashboard')
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Login failed')
+    }
+  }
 
   return (
     <div className="min-h-screen flex bg-bg">
@@ -66,7 +91,7 @@ export default function Login() {
       </div>
 
       <div className="flex-1 flex items-center justify-center p-6">
-        <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-sm">
+        <form onSubmit={onSubmit} className="w-full max-w-sm">
           <h2 className="text-xl font-semibold text-gray-100 mb-1">Sign in to your account</h2>
           <p className="text-sm text-gray-500 mb-8">Enter your credentials to access the fleet console</p>
 
@@ -74,32 +99,39 @@ export default function Login() {
             <Input
               label="Email"
               type="email"
+              name="email"
               placeholder="you@transitops.com"
-              error={errors.email?.message}
-              {...register('email', { required: 'Email is required' })}
+              value={formData.email}
+              onChange={handleChange}
+              error={errors.email}
             />
             <Input
               label="Password"
               type="password"
+              name="password"
               placeholder="••••••••"
-              error={errors.password?.message}
-              {...register('password', { required: 'Password is required', minLength: { value: 6, message: 'Minimum 6 characters' } })}
+              value={formData.password}
+              onChange={handleChange}
+              error={errors.password}
             />
-           <Dropdown
-  label="Login As"
-  placeholder="Select role"
-  options={[
-    'FleetManager',
-    'Driver',
-    'SafetyOfficer',
-    'FinancialAnalyst',
-  ]}
-  {...register('role')}
-/>
+            <Dropdown
+              label="Login As"
+              name="role"
+              placeholder="Select role"
+              value={formData.role}
+              onChange={handleChange}
+              options={['FleetManager', 'Driver', 'SafetyOfficer', 'FinancialAnalyst']}
+            />
 
             <div className="flex items-center justify-between text-sm pt-1">
               <label className="flex items-center gap-2 text-gray-400 cursor-pointer">
-                <input type="checkbox" className="accent-accent" {...register('remember')} />
+                <input
+                  type="checkbox"
+                  name="remember"
+                  checked={formData.remember}
+                  onChange={handleChange}
+                  className="accent-accent"
+                />
                 Remember Me
               </label>
               <a href="#" className="text-accent hover:text-accent-light transition-colors">
