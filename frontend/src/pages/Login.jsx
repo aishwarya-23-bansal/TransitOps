@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { FiTruck, FiMap, FiTool, FiBarChart2 } from 'react-icons/fi'
 import Input from '../components/Input.jsx'
@@ -122,6 +122,19 @@ export default function Login() {
               onChange={handleChange}
               options={['FleetManager', 'Driver', 'SafetyOfficer', 'FinancialAnalyst']}
             />
+           
+
+<div className="mt-4 text-center">
+  <p className="text-sm text-gray-400">
+    Don't have an account?{" "}
+    <Link
+      to="/register"
+      className="text-accent hover:text-accent-light font-medium transition-colors"
+    >
+      Register
+    </Link>
+  </p>
+</div>
 
             <div className="flex items-center justify-between text-sm pt-1">
               <label className="flex items-center gap-2 text-gray-400 cursor-pointer">
