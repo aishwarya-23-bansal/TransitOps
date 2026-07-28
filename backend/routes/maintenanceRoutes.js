@@ -10,6 +10,6 @@ const {
 
 router.get("/", getMaintenance);
 router.post("/", createMaintenance);
-router.patch("/:id/close", closeMaintenance);
+router.put("/:id/close", closeMaintenance);
 
 module.exports = router;

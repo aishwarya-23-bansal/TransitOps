@@ -6,8 +6,8 @@ const { createTrip,dispatchTrip ,completeTrip,cancelTrip,getTrips,getTripById} =
 
 router.get("/", getTrips);
 router.post("/", createTrip);
-router.patch("/:id/dispatch", dispatchTrip);
-router.patch("/:id/complete", completeTrip);
-router.patch("/:id/cancel", cancelTrip);
+router.put("/:id/dispatch", dispatchTrip);
+router.put("/:id/complete", completeTrip);
+router.put("/:id/cancel", cancelTrip);
 router.get("/:id", getTripById);
 module.exports = router;

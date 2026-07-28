@@ -20,7 +20,7 @@ export const expenseAPI = {
 export const maintenanceAPI = {
   getAll: () => api.get('/maintenance'),
   create: (data) => api.post('/maintenance', data),
-  close: (id) => api.patch(`/maintenance/${id}/close`),
+  close: (id) => api.put(`/maintenance/${id}/close`),
 }
 
 api.interceptors.request.use((config) => {
@@ -52,12 +52,12 @@ export const tripAPI = {
 
   create: (payload) => api.post('/trips', payload),
 
-  dispatch: (id) => api.patch(`/trips/${id}/dispatch`),
+  dispatch: (id) => api.put(`/trips/${id}/dispatch`),
 
   complete: (id, payload) =>
-    api.patch(`/trips/${id}/complete`, payload),
+    api.put(`/trips/${id}/complete`, payload),
 
-  cancel: (id) => api.patch(`/trips/${id}/cancel`),
+  cancel: (id) => api.put(`/trips/${id}/cancel`),
 
   update: (id, payload) => api.put(`/trips/${id}`, payload),
 }
